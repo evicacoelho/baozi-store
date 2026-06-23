@@ -116,7 +116,7 @@ public class PedidoController {
             error.put("error", "Cliente não encontrado com ID: " + clienteId);
             return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
         }
-        List<Pedido> pedidos = pedidoRepository.findClienteId(clienteId);
+        List<Pedido> pedidos = pedidoRepository.findByClienteId(clienteId);
         return new ResponseEntity<>(pedidos, HttpStatus.OK);
     }
 
@@ -127,7 +127,7 @@ public class PedidoController {
             error.put("error", "Produto não encontrado com ID: " + produtoId);
             return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
         }
-        List<Pedido> pedidos = pedidoRepository.findProdutoId(produtoId);
+        List<Pedido> pedidos = pedidoRepository.findByProdutoId(produtoId);
         return new ResponseEntity<>(pedidos, HttpStatus.OK);
     }
     

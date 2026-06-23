@@ -9,9 +9,9 @@ import com.baozi.models.Pedido;
 
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
-    List<Pedido> findClienteId(Long clienteId);
+    List<Pedido> findByClienteId(Long clienteId);
 
-    List<Pedido> findProdutoId(Long produtoId);
+    List<Pedido> findByProdutoId(Long produtoId);
 
     List<Pedido> findByDataPedidoBetween(LocalDateTime inicio, LocalDateTime fim);
 
