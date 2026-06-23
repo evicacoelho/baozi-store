@@ -18,6 +18,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_DIR/baozi"
 JAVA_VERSION="17"
 MAVEN_VERSION="3.8+"
 MYSQL_USER="root"
@@ -162,6 +163,7 @@ setup_database() {
 
 build_project() {
     print_header "Building the Project"
+
     
     print_info "Running: mvn clean compile"
     if mvn clean compile -q; then
@@ -242,6 +244,31 @@ check_application_status() {
     fi
 }
 
+stop_application() {
+    print_header "Stopping Baozí Store API"
+
+    PID=$(lsof -ti tcp:"$APP_PORT" 2>/dev/null)
+    if [ -z "$PID" ]; then
+        print_warning "No process found on port $APP_PORT"
+        return 0
+    fi
+
+    print_info "Sending SIGTERM to PID $PID..."
+    kill "$PID"
+
+    for i in {1..10}; do
+        sleep 1
+        if ! kill -0 "$PID" 2>/dev/null; then
+            print_success "Application stopped (PID $PID)"
+            return 0
+        fi
+    done
+
+    print_warning "Process did not exit after 10s — sending SIGKILL..."
+    kill -9 "$PID" 2>/dev/null
+    print_success "Application forcefully stopped (PID $PID)"
+}
+
 show_help() {
     echo "Baozí Store API - Run Script"
     echo ""
@@ -251,6 +278,7 @@ show_help() {
     echo "  --help, -h          Show this help message"
     echo "  --dev, -d           Run in development mode (H2 database)"
     echo "  --prod, -p          Run in production mode (MySQL database)"
+    echo "  --stop              Stop the running application"
     echo "  --skip-tests, -s    Skip running tests"
     echo "  --no-build, -n      Skip build (use existing compiled classes)"
     echo "  --install, -i       Install dependencies and setup only"
@@ -258,8 +286,10 @@ show_help() {
     echo "  --clean, -c         Clean the project before building"
     echo ""
     echo "Examples:"
-    echo "  ./run.sh                     # Build, test, and run with MySQL"
+    echo "  ./run.sh                     # Build, test, and run with H2 (default)"
     echo "  ./run.sh --dev               # Run with H2 database"
+    echo "  ./run.sh --prod              # Run with MySQL database"
+    echo "  ./run.sh --stop              # Stop the running application"
     echo "  ./run.sh --skip-tests        # Skip tests and run"
     echo "  ./run.sh --test-only         # Only run tests"
     echo "  ./run.sh --clean --dev       # Clean and run in dev mode"
@@ -273,6 +303,7 @@ show_help() {
 # Parse command line arguments
 DEV_MODE=false
 PROD_MODE=false
+STOP=false
 SKIP_TESTS=false
 NO_BUILD=false
 INSTALL_ONLY=false
@@ -291,6 +322,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --prod|-p)
             PROD_MODE=true
+            shift
+            ;;
+        --stop)
+            STOP=true
             shift
             ;;
         --skip-tests|-s)
@@ -327,10 +362,10 @@ done
 
 print_header "Baozí Store API - Setup & Run Script"
 
-# Check if running with proper permissions
-if [ ! -x "$0" ]; then
-    print_info "Making script executable..."
-    chmod +x "$0"
+# Stop mode
+if [ "$STOP" = true ]; then
+    stop_application
+    exit 0
 fi
 
 # Check prerequisites
@@ -378,12 +413,14 @@ if [ "$DEV_MODE" = false ]; then
 fi
 
 # Run the application
-if [ "$DEV_MODE" = true ] || [ "$PROD_MODE" = false ] && [ -z "$1" ]; then
+if [ "$DEV_MODE" = true ]; then
+    run_with_dev_profile
+elif [ "$PROD_MODE" = true ]; then
+    run_application
+else
     # Default to dev mode if no mode specified
     print_info "No mode specified. Running in DEVELOPMENT mode (H2 database)."
     run_with_dev_profile
-else
-    run_application
 fi
 
 # This point is only reached if the application is stopped
