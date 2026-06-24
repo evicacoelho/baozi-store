@@ -166,7 +166,7 @@ build_project() {
 
     
     print_info "Running: mvn clean compile"
-    if mvn clean compile -q; then
+    if mvn clean compile --no-transfer-progress; then
         print_success "Project compiled successfully"
     else
         print_error "Failed to compile the project"
@@ -180,7 +180,7 @@ run_tests() {
     print_header "Running Tests"
     
     print_info "Running: mvn test"
-    if mvn test -q; then
+    if mvn test --no-transfer-progress; then
         print_success "All tests passed"
     else
         print_warning "Some tests failed. You can still run the application."
@@ -374,7 +374,7 @@ check_prerequisites
 # Clean if requested
 if [ "$CLEAN" = true ]; then
     print_header "Cleaning Project"
-    mvn clean -q
+    mvn clean --no-transfer-progress
     print_success "Project cleaned"
 fi
 
